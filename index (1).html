@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Food Tracker</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#667085;--bd:#e3e6eb;--ac:#0f766e;--acbg:#e0f2f1;--p:#2563eb;--f:#d97706;--c:#7c3aed;--rd:#dc2626;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1318;--card:#181d24;--tx:#eef1f5;--mu:#98a2b3;--bd:#2a313b;--ac:#2dd4bf;--acbg:#12312f;--p:#60a5fa;--f:#fbbf24;--c:#a78bfa;--rd:#f87171}}
+:root[data-theme="dark"]{--bg:#0f1318;--card:#181d24;--tx:#eef1f5;--mu:#98a2b3;--bd:#2a313b;--ac:#2dd4bf;--acbg:#12312f;--p:#60a5fa;--f:#fbbf24;--c:#a78bfa;--rd:#f87171}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:4px 0 12px}h3{font-size:14px;margin:16px 0 8px;color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+button,input{font:inherit}button{cursor:pointer}
+input{padding:9px 11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);max-width:100%}
+.chips{display:flex;gap:6px;margin-bottom:12px}
+.chip,.btn{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:999px;padding:6px 14px}
+.chip.on{background:var(--acbg);border-color:var(--ac);color:var(--ac);font-weight:600}
+.btn{border-radius:8px;padding:7px 12px}.btn.pr{background:var(--ac);border-color:var(--ac);color:var(--bg);font-weight:600}.btn.dg{color:var(--rd)}
+.tot{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.grid b{display:block;font-size:20px}.grid span{font-size:11px;color:var(--mu);text-transform:uppercase}
+.k b{color:var(--ac)}.p b{color:var(--p)}.f b{color:var(--f)}.c b{color:var(--c)}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.info{min-width:0}.nm{font-weight:600}.sv{font-size:12px;color:var(--mu)}.mc{font-size:12px;margin-top:2px}.mc i{font-style:normal;margin-right:8px}
+.act{display:flex;gap:6px;align-items:center;flex-shrink:0}.act input{width:62px}
+.form{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px}.form .w{grid-column:1/-1}
+.note{font-size:12px;color:var(--mu);margin:8px 0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Food Tracker</h1>
+<div class="chips" id="tabs"></div>
+<div id="v"></div>
+</div>
+<script>
+const DEF=[
+["Cavendish Banana","1 piece, ~100g",90.5,1.1,0.3,22.8],["Chipmores Double Choc Cookies","5 pieces, 36g",176,2.2,8.3,22.5],
+["Kawan Roti Prata","1 piece",287,4.2,12.9,35.3],["Lotus Rolled Oats","1 serving, 35g",134,4.1,3.3,20.2],
+["Arab Honey","1 tbsp, 21g",64,0,0,17.3],["Wagyu Potato Wedges","50g",300,2.9,18.5,27.5],
+["Broccoli","100g",34,2.8,0.4,6.6],["Cucumber","1 piece, ~100-150g",15,0,0,3],["Tomato","1 piece, ~100g",18,0.9,0.2,3.9],
+["Egg","1 piece",75,6.3,4.8,0.36],["Tuna in Spring Water","1 can, 110g",122,29.2,0.6,0],
+["Dutch Lady Lowfat Milk","200ml",88,5.2,2.4,11.4],["FarmFresh High Protein Choco Milk","200ml",166.4,10,4.8,20.8],
+["Goodday Lowfat Milk","200ml",98,6.8,2.8,11.2],["HL Advanced Milk","250ml",140,12.5,2.3,17.5],["HL Original Milk","200ml",108,8.4,2,14],
+["Nestle Omega Plus Milk","200ml",100,6.2,3.6,11],["Nobo Soymilk","180ml",104,7.6,1.1,9.4],["V-Soy Soy Milk","250ml",160,7.8,7.8,14],
+["Yarra FarmFresh Milk","200ml",128.6,6.4,7,10],["Yeo’s Soy Milk","250ml",98,5,2.8,12.8],
+["Kangshifu Jasmine Tea","100ml",18,0,0,4.2],["Matkool Icy Grape","1 stick",39,0,0,10]];
+const KEY="foodtracker.v1";
+const mk=(a,i)=>({id:"d"+i,name:a[0],serving:a[1],k:a[2],p:a[3],f:a[4],c:a[5]});
+const uid=()=>"u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const r1=n=>Math.round(n*10)/10;
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.foods)return s}catch(e){}return{foods:DEF.map(mk),log:{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load(),T="log",Q="";
+let D=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const tot=e=>e.reduce((a,x)=>{a.k+=x.k*x.q;a.p+=x.p*x.q;a.f+=x.f*x.q;a.c+=x.c*x.q;return a},{k:0,p:0,f:0,c:0});
+const grid=t=>`<div class="grid"><div class="k"><b>${r1(t.k)}</b><span>kcal</span></div><div class="p"><b>${r1(t.p)}</b><span>Protein g</span></div><div class="f"><b>${r1(t.f)}</b><span>Fat g</span></div><div class="c"><b>${r1(t.c)}</b><span>Carbs g</span></div></div>`;
+const mc=x=>`<div class="mc"><i>${r1(x.k)} kcal</i><i style="color:var(--p)">P ${r1(x.p)}</i><i style="color:var(--f)">F ${r1(x.f)}</i><i style="color:var(--c)">C ${r1(x.c)}</i></div>`;
+function R(){
+  document.getElementById("tabs").innerHTML=[["log","Log"],["foods","My foods"],["hist","History"]].map(t=>`<button class="chip${T===t[0]?" on":""}" onclick="T='${t[0]}';R()">${t[1]}</button>`).join("");
+  document.getElementById("v").innerHTML=T==="log"?vLog():T==="foods"?vFoods():vHist();
+}
+function vLog(){
+  const e=S.log[D]||[];
+  return `<input type="date" id="dt" value="${D}" onchange="D=this.value||D;R()">
+  <div class="tot">${grid(tot(e))}</div>
+  <h3>Eaten</h3>${e.length?e.map((x,i)=>`<div class="item"><div class="info"><div class="nm">${esc(x.n)}</div><div class="sv">${x.q} × ${esc(x.s||"serving")}</div>${mc({k:x.k*x.q,p:x.p*x.q,f:x.f*x.q,c:x.c*x.q})}</div><button class="btn dg" onclick="rm(${i})">Remove</button></div>`).join(""):'<p class="note">Nothing logged for this day.</p>'}
+  <h3>Add food</h3><input type="search" style="width:100%;margin-bottom:8px" placeholder="Search…" value="${esc(Q)}" oninput="Q=this.value;document.getElementById('fl').innerHTML=rows()">
+  <div id="fl">${rows()}</div>`;
+}
+function rows(){
+  const q=Q.toLowerCase().trim(),L=S.foods.filter(f=>!q||f.name.toLowerCase().includes(q));
+  return L.length?L.map(f=>`<div class="item"><div class="info"><div class="nm">${esc(f.name)}</div><div class="sv">${esc(f.serving||"")}</div>${mc(f)}</div><div class="act"><input type="number" id="q_${f.id}" value="1" min="0.5" step="0.5"><button class="btn pr" onclick="add('${f.id}')">Add</button></div></div>`).join(""):'<p class="note">No foods match. Add one under My foods.</p>';
+}
+function add(id){const f=S.foods.find(x=>x.id===id);if(!f)return;const q=parseFloat(document.getElementById("q_"+id).value)||1;(S.log[D]=S.log[D]||[]).push({n:f.name,s:f.serving,k:f.k,p:f.p,f:f.f,c:f.c,q});save();R()}
+function rm(i){S.log[D].splice(i,1);if(!S.log[D].length)delete S.log[D];save();R()}
+function vFoods(){
+  return `<h3>Add a food</h3><div class="form">
+  <input class="w" id="nn" placeholder="Name"><input class="w" id="ns" placeholder="Serving (e.g. 1 piece, 100g)">
+  <input id="nk" type="number" placeholder="kcal"><input id="np" type="number" placeholder="Protein g">
+  <input id="nf" type="number" placeholder="Fat g"><input id="nc" type="number" placeholder="Carbs g"></div>
+  <button class="btn pr" onclick="addFood()">Save food</button>
+  <h3>Upload CSV</h3><p class="note">Columns: name, serving, kcal, protein, fat, carbs. Ranges like 89-92 use the midpoint. Uploaded foods are added to your list.</p>
+  <div class="bar"><input type="file" accept=".csv,text/csv" onchange="up(this)"><button class="btn" onclick="dl('food-template.csv','name,serving,kcal,protein,fat,carbs\\nBanana,1 piece,90,1.1,0.3,22.8\\n')">Download template</button></div>
+  <h3>Your foods (${S.foods.length})</h3>${S.foods.map(f=>`<div class="item"><div class="info"><div class="nm">${esc(f.name)}</div><div class="sv">${esc(f.serving||"")}</div>${mc(f)}</div><button class="btn dg" onclick="delFood('${f.id}')">Delete</button></div>`).join("")}`;
+}
+function addFood(){const g=i=>document.getElementById(i).value,n=g("nn").trim();if(!n)return alert("Enter a name.");
+  S.foods.unshift({id:uid(),name:n,serving:g("ns").trim(),k:+g("nk")||0,p:+g("np")||0,f:+g("nf")||0,c:+g("nc")||0});save();R()}
+function delFood(id){S.foods=S.foods.filter(f=>f.id!==id);save();R()}
+function parseCSV(t){const rows=[];let r=[],c="",q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch=='"')q=true;else if(ch==","){r.push(c);c=""}
+    else if(ch=="\n"||ch=="\r"){if(ch=="\r"&&t[i+1]=="\n")i++;r.push(c);c="";rows.push(r);r=[]}else c+=ch}
+  if(c||r.length){r.push(c);rows.push(r)}return rows.filter(x=>x.some(y=>y.trim()))}
+const num=v=>{const m=String(v||"").match(/\d+(\.\d+)?/g);return m?(m.length>1?(+m[0]+ +m[1])/2:+m[0]):0};
+function importCSV(t){
+  const Rw=parseCSV(t);if(Rw.length<2)return alert("No rows found in that file.");
+  const h=Rw[0].map(x=>x.trim().toLowerCase()),ix=(...n)=>h.findIndex(x=>n.some(m=>x.startsWith(m)));
+  let c={n:ix("name","food"),s:ix("serving","content"),k:ix("kcal","cal"),p:ix("protein"),f:ix("fat"),c:ix("carb")};
+  if(c.n<0||c.k<0)c={n:0,s:1,k:2,p:3,f:4,c:5};
+  let a=0;Rw.slice(1).forEach(r=>{const n=(r[c.n]||"").trim();if(!n)return;
+    S.foods.push({id:uid(),name:n,serving:(r[c.s]||"").trim(),k:num(r[c.k]),p:num(r[c.p]),f:num(r[c.f]),c:num(r[c.c])});a++});
+  save();R();alert(a+" foods added.")}
+function up(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>importCSV(r.result);r.readAsText(f)}
+function dl(name,text){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"text/csv"}));a.download=name;a.click()}
+function vHist(){
+  const ds=Object.keys(S.log).sort().reverse();
+  return `<div class="bar"><button class="btn" onclick="exportLog()">Export log CSV</button><button class="btn dg" onclick="clearAll()">Clear all data</button></div>
+  <p class="note">Data is saved in this browser on this device only.</p>`+(ds.length?ds.map(d=>`<div class="item"><div class="info"><div class="nm">${d}</div>${mc(tot(S.log[d]))}</div><button class="btn" onclick="D='${d}';T='log';R()">Open</button></div>`).join(""):'<p class="note">No days logged yet.</p>');
+}
+function exportLog(){const q=s=>'"'+String(s).replace(/"/g,'""')+'"';let o="date,food,servings,serving size,kcal,protein,fat,carbs\n";
+  Object.keys(S.log).sort().forEach(d=>S.log[d].forEach(x=>{o+=[d,q(x.n),x.q,q(x.s||""),r1(x.k*x.q),r1(x.p*x.q),r1(x.f*x.q),r1(x.c*x.q)].join(",")+"\n"}));dl("food-log.csv",o)}
+function clearAll(){if(confirm("Delete all foods and logs on this device?")){try{localStorage.removeItem(KEY)}catch(e){}S=load();R()}}
+R();
+</script>
+</body>
+</html>
